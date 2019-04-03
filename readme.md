@@ -1,6 +1,7 @@
 # gitcli
 
-Command line tool to pull GitLab repos.
+Command line tool to pull GitLab repos.  
+Before `go build`,do some work to remove *impl in vault,because `go-keychain` only support mac and ios.
 
 ## Basic Commands
 
