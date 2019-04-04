@@ -5,6 +5,17 @@ import (
 	"log"
 )
 
+type Vault interface {
+	Store(key string, secret []byte) error
+	Get(key string) ([]byte, error)
+	Erase(key string) error
+	ClientType() string
+}
+
+func NewClient() (Vault, error) {
+	return &macCredClient{}, nil
+}
+
 type macCredClient struct {
 }
 

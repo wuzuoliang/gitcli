@@ -90,6 +90,8 @@ func getCredential() (*credential, error) {
 	if c.Token == "" {
 		return nil, errors.New("invalid token")
 	}
+	fmt.Println("Host", c.Host)
+	fmt.Println("Token", c.Token)
 	return c, nil
 }
 

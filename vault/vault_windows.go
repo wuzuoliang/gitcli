@@ -1,8 +1,18 @@
 package vault
 
-import (
-	"github.com/danieljoos/wincred"
+import ("github.com/danieljoos/wincred"
 )
+
+type Vault interface {
+	Store(key string, secret []byte) error
+	Get(key string) ([]byte, error)
+	Erase(key string) error
+	ClientType() string
+}
+
+func NewClient() (Vault, error) {
+	return &winCredClient{}, nil
+}
 
 type winCredClient struct {
 }

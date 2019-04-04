@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -23,9 +24,16 @@ func pathExists(path string) (bool, error) {
 
 func CreateBoltDB(dbPath string) (*bolt.DB, error) {
 	if len(dbPath) != 0 {
-		if !strings.HasSuffix(dbPath, "/") {
-			dbPath += "/"
+		if runtime.GOOS=="windows"{
+			if !strings.HasSuffix(dbPath, "\\") {
+				dbPath += "\\"
+			}
+		}else{
+			if !strings.HasSuffix(dbPath, "/") {
+				dbPath += "/"
+			}
 		}
+
 	}
 
 	if b, _ := pathExists(dbPath + boltDB); b {
@@ -50,8 +58,14 @@ func CreateBoltDB(dbPath string) (*bolt.DB, error) {
 
 func LoadBoltDB(dbPath string) ([]GitLabInfo, error) {
 	if len(dbPath) != 0 {
-		if !strings.HasSuffix(dbPath, "/") {
-			dbPath += "/"
+		if runtime.GOOS=="windows"{
+			if !strings.HasSuffix(dbPath, "\\") {
+				dbPath += "\\"
+			}
+		}else{
+			if !strings.HasSuffix(dbPath, "/") {
+				dbPath += "/"
+			}
 		}
 	}
 	dictionary := make([]GitLabInfo, 0)

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 )
 
@@ -15,6 +16,9 @@ type MultiTree struct {
 }
 
 func BuildTree() *MultiTree {
+	if runtime.GOOS == "windows" {
+		return &MultiTree{0, 0, "\\", groupType, "", make([]*MultiTree, 0)}
+	}
 	return &MultiTree{0, 0, "/", groupType, "", make([]*MultiTree, 0)}
 }
 
@@ -23,7 +27,11 @@ func (m MultiTree) Print(detailPrint bool) {
 		fmt.Println("ID=", m.ID, "PID=", m.PID, "Path=", m.Path, "Type=", m.Type, "Children Num=", len(m.Children), "SSH", m.SSH)
 	} else {
 		if m.Type == groupType && m.ID != 0 {
-			fmt.Println(m.Path + "/")
+			if runtime.GOOS == "windows" {
+				fmt.Println(m.Path + "\\")
+			} else {
+				fmt.Println(m.Path + "/")
+			}
 		} else {
 			fmt.Println(m.Path)
 		}
@@ -60,7 +68,11 @@ func (m MultiTree) LS(detailPrint bool) {
 }
 func (m *MultiTree) FindByName(path string) *MultiTree {
 	if len(path) == 0 {
-		path = "/"
+		if runtime.GOOS == "windows" {
+			path = "\\"
+		} else {
+			path = "/"
+		}
 	}
 	if m.Path == path {
 		return m
@@ -94,7 +106,11 @@ func (m *MultiTree) FindByID(ID int) *MultiTree {
 func (m *MultiTree) AddNode(treeNode *MultiTree) {
 	t := m.FindByID(treeNode.PID)
 	if t == nil {
-		fmt.Println("MultiTree::AddNode not found parent path", treeNode.Path[:strings.LastIndex(treeNode.Path, "/")])
+		if runtime.GOOS == "windows" {
+			fmt.Println("MultiTree::AddNode not found parent path", treeNode.Path[:strings.LastIndex(treeNode.Path, "\\")])
+		} else {
+			fmt.Println("MultiTree::AddNode not found parent path", treeNode.Path[:strings.LastIndex(treeNode.Path, "/")])
+		}
 		return
 	}
 	found := false
@@ -109,7 +125,7 @@ func (m *MultiTree) AddNode(treeNode *MultiTree) {
 }
 
 func (m *MultiTree) DelNode(name string) {
-	if name == "/" || len(name) == 0 {
+	if name == "/" || name == "\\" || len(name) == 0 {
 		return
 	}
 	t := m.FindByName(name)
@@ -130,7 +146,11 @@ func MakeOrderTree(dictionary []GitLabInfo) *MultiTree {
 	nameIDRel := make(map[string]int, len(dictionary))
 	tree := BuildTree()
 	index := 0
-	nameIDRel["/"] = index
+	if runtime.GOOS == "windows" {
+		nameIDRel["\\"] = index
+	} else {
+		nameIDRel["/"] = index
+	}
 	for _, v := range dictionary {
 		pathSlice := Path2StrSlice(v.Path)
 		pathSliceLen := len(pathSlice)
@@ -140,9 +160,16 @@ func MakeOrderTree(dictionary []GitLabInfo) *MultiTree {
 				nameIDRel[pathSlice[i]] = index
 				tPid := 0
 				if i > 0 {
-					prePath := strings.TrimSuffix(pathSlice[i-1], "/")
-					if pid, ok := nameIDRel[prePath]; ok {
-						tPid = pid
+					if runtime.GOOS == "windows" {
+						prePath := strings.TrimSuffix(pathSlice[i-1], "\\")
+						if pid, ok := nameIDRel[prePath]; ok {
+							tPid = pid
+						}
+					} else {
+						prePath := strings.TrimSuffix(pathSlice[i-1], "/")
+						if pid, ok := nameIDRel[prePath]; ok {
+							tPid = pid
+						}
 					}
 				} else {
 					tree.AddNode(&MultiTree{index, 0, pathSlice[0], groupType, "", make([]*MultiTree, 0)})

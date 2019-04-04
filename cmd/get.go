@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -18,10 +19,12 @@ var (
 		OutputDirectory string
 		ExcludeList     cli.StringSlice
 	}{}
+	failedGetList []string
 )
 
 // GetHandler handle the get command
 var GetHandler = func(c *cli.Context) error {
+	failedGetList = make([]string, 0)
 	cred, err := loadCredential()
 	if err != nil {
 		fmt.Println("GetHandler::loadCredential error", err)
@@ -56,7 +59,11 @@ var GetHandler = func(c *cli.Context) error {
 		if outDir == "" {
 			outDir = build.Default.GOPATH
 		}
-		outDir = filepath.Join(outDir, "src/"+u.Host)
+		if runtime.GOOS == "windows" {
+			outDir = filepath.Join(outDir, "src\\"+u.Host)
+		} else {
+			outDir = filepath.Join(outDir, "src/"+u.Host)
+		}
 	}
 
 	fmt.Println("Output Directory", outDir)
@@ -72,6 +79,13 @@ var GetHandler = func(c *cli.Context) error {
 	}
 
 	syncDir(outDir, destTree)
+
+	if len(failedGetList) > 0 {
+		fmt.Println("failedGetList num", len(failedGetList))
+		for _, v := range failedGetList {
+			fmt.Println(v)
+		}
+	}
 	return nil
 }
 
@@ -92,11 +106,20 @@ func syncDir(outDir string, destTree *MultiTree) {
 			}
 		} else {
 			if destTree.Type == projectType {
-				tParPath := tPath[:strings.LastIndex(tPath, "/")]
-				err := os.Chdir(tParPath)
-				if err != nil {
-					fmt.Println("Chdir", outDir+v, "error", err)
-					return
+				if runtime.GOOS == "windows" {
+					tParPath := tPath[:strings.LastIndex(tPath, "\\")]
+					err := os.Chdir(tParPath)
+					if err != nil {
+						fmt.Println("Chdir", outDir+v, "error", err)
+						return
+					}
+				} else {
+					tParPath := tPath[:strings.LastIndex(tPath, "/")]
+					err := os.Chdir(tParPath)
+					if err != nil {
+						fmt.Println("Chdir", outDir+v, "error", err)
+						return
+					}
 				}
 				repo := destTree.SSH
 				cloneOrUpdate(repo, tPath)
@@ -119,6 +142,7 @@ func exeCmd(cmd string) error {
 	out, err := exec.Command(head, parts...).Output()
 	if err != nil {
 		fmt.Println(err)
+		failedGetList = append(failedGetList, cmd)
 		return err
 	}
 	if len(out) != 0 {
@@ -128,8 +152,15 @@ func exeCmd(cmd string) error {
 }
 
 func cloneOrUpdate(repo, dir string) {
-	dst := filepath.Clean(dir + "/.git")
-	parentDir := filepath.Clean(dir + "/../")
+	dst := ""
+	parentDir := ""
+	if runtime.GOOS == "windows" {
+		dst = filepath.Clean(dir + "\\.git")
+		parentDir = filepath.Clean(dir + "\\..\\")
+	} else {
+		dst = filepath.Clean(dir + "/.git")
+		parentDir = filepath.Clean(dir + "/../")
+	}
 	// check to see if git repo exist
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		err := os.Chdir(parentDir)

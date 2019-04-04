@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/boltdb/bolt"
 	"github.com/urfave/cli"
+	"runtime"
+	"strings"
 )
 
 // LoadHandler serves for load command handler
@@ -36,10 +38,18 @@ var LoadHandler = func(c *cli.Context) error {
 
 	infoList := make([]GitLabInfo, 0, len(projects)+len(groups))
 	for _, v := range projects {
-		infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, v.Path, v.SSH, projectType})
+		if runtime.GOOS == "windows" {
+			infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, strings.Replace(v.Path, "/", "\\", -1), v.SSH, projectType})
+		} else {
+			infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, v.Path, v.SSH, projectType})
+		}
 	}
 	for _, v := range groups {
-		infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, v.Path, "", groupType})
+		if runtime.GOOS == "windows" {
+			infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, strings.Replace(v.Path, "/", "\\", -1), "", groupType})
+		} else {
+			infoList = append(infoList, GitLabInfo{v.ID, v.PID, v.Name, v.Path, "", groupType})
+		}
 	}
 
 	err = db.Update(func(tx *bolt.Tx) error {

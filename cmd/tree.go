@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/urfave/cli"
+	"runtime"
 	"strings"
 )
 
@@ -23,23 +24,45 @@ var TreeHandler = func(c *cli.Context) error {
 }
 
 func Path2StrSlice(path string) []string {
-	path = strings.TrimSuffix(path, "/")
-	if len(path) > 0 {
-		tmp := strings.Split(path, "/")
-		length := len(tmp)
-		ret := make([]string, 0, length)
-		for cur := 0; cur < length; cur++ {
-			t := ""
-			for i := 0; i <= cur; i++ {
-				if i == 0 {
-					t += tmp[i]
-				} else {
-					t += "/" + tmp[i]
+	if runtime.GOOS == "windows" {
+		path = strings.TrimSuffix(path, "\\")
+		if len(path) > 0 {
+			tmp := strings.Split(path, "\\")
+			length := len(tmp)
+			ret := make([]string, 0, length)
+			for cur := 0; cur < length; cur++ {
+				t := ""
+				for i := 0; i <= cur; i++ {
+					if i == 0 {
+						t += tmp[i]
+					} else {
+						t += "\\" + tmp[i]
+					}
 				}
+				ret = append(ret, t)
 			}
-			ret = append(ret, t)
+			return ret
 		}
-		return ret
+		return []string{"\\"}
+	} else {
+		path = strings.TrimSuffix(path, "/")
+		if len(path) > 0 {
+			tmp := strings.Split(path, "/")
+			length := len(tmp)
+			ret := make([]string, 0, length)
+			for cur := 0; cur < length; cur++ {
+				t := ""
+				for i := 0; i <= cur; i++ {
+					if i == 0 {
+						t += tmp[i]
+					} else {
+						t += "/" + tmp[i]
+					}
+				}
+				ret = append(ret, t)
+			}
+			return ret
+		}
+		return []string{"/"}
 	}
-	return []string{"/"}
 }
